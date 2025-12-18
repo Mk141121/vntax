@@ -1,0 +1,22 @@
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Local env files
+.env*.local
+.env
+
+# Vercel
+.vercel
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
