@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
-import { Wallet, Shield, TrendingDown, DollarSign, Info, Download, Receipt, PieChart as PieChartIcon } from 'lucide-react';
+import { Wallet, Shield, TrendingDown, DollarSign, Info, Download, Receipt, PieChart as PieChartIcon, FileText } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { useTaxStore } from '@/store/tax-store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
 import { exportTaxResultToPDFSimple } from '@/lib/pdf-export-simple';
 
@@ -217,15 +218,143 @@ export function TaxSummary() {
                 Phân tích chi tiết thuế thu nhập cá nhân
               </CardDescription>
             </div>
-            <Button 
-              onClick={handleExportPDF}
-              variant="outline"
-              size="sm"
-              className="gap-2 h-9 text-xs border-primary/20 hover:bg-primary/10"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Tải PDF
-            </Button>
+            <div className="flex gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 h-9 text-xs border-amber-500/30 hover:bg-amber-500/10"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    CHI TIẾT
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-base">
+                      <Info className="h-5 w-5 text-primary" />
+                      Chi Tiết Cách Tính Thuế
+                    </DialogTitle>
+                    <DialogDescription className="text-xs">
+                      Phân tích chi tiết cách tính thuế TNCN theo luật Việt Nam 2025-2026
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  {taxResult && (taxResult as any).explanation && (
+                    <div className="space-y-4 mt-4">
+                      {(() => {
+                        const explanation = (taxResult as any).explanation;
+                        return (
+                          <>
+                            {/* Summary */}
+                            <Card className="border-border/50">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                  📊 Tóm Tắt
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="pt-0">
+                                <pre className="text-xs whitespace-pre-wrap font-sans text-foreground leading-relaxed">
+                                  {explanation.summary}
+                                </pre>
+                              </CardContent>
+                            </Card>
+
+                            {/* Tax Calculation */}
+                            <Card className="border-border/50">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                  🧮 Cách Tính Thuế
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="pt-0">
+                                <pre className="text-xs whitespace-pre-wrap font-sans text-foreground leading-relaxed">
+                                  {explanation.taxCalculation}
+                                </pre>
+                              </CardContent>
+                            </Card>
+
+                            {/* Deductions Explanation */}
+                            <Card className="border-border/50">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                  💰 Giảm Trừ
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="pt-0">
+                                <pre className="text-xs whitespace-pre-wrap font-sans text-foreground leading-relaxed">
+                                  {explanation.deductionsExplanation}
+                                </pre>
+                              </CardContent>
+                            </Card>
+
+                            {/* Insurance Explanation */}
+                            <Card className="border-border/50">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                  🛡️ Bảo Hiểm
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="pt-0">
+                                <pre className="text-xs whitespace-pre-wrap font-sans text-foreground leading-relaxed">
+                                  {explanation.insuranceExplanation}
+                                </pre>
+                              </CardContent>
+                            </Card>
+
+                            {/* Effective Rate */}
+                            <Card className="border-border/50">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                  📈 Thuế Suất Hiệu Dụng
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="pt-0">
+                                <pre className="text-xs whitespace-pre-wrap font-sans text-foreground leading-relaxed">
+                                  {explanation.effectiveRateExplanation}
+                                </pre>
+                              </CardContent>
+                            </Card>
+
+                            {/* Suggestions */}
+                            {explanation.suggestions && explanation.suggestions.length > 0 && (
+                              <Card className="border-border/50 border-primary/20 bg-primary/5">
+                                <CardHeader className="pb-3">
+                                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                    💡 Gợi Ý
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-0">
+                                  <ul className="space-y-2">
+                                    {explanation.suggestions.map((suggestion: string, index: number) => (
+                                      <li key={index} className="text-xs text-foreground flex gap-2 leading-relaxed">
+                                        <span className="text-primary">•</span>
+                                        <span>{suggestion}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </CardContent>
+                              </Card>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+              
+              <Button 
+                onClick={handleExportPDF}
+                variant="outline"
+                size="sm"
+                className="gap-2 h-9 text-xs border-primary/20 hover:bg-primary/10"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Tải PDF
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>

@@ -1,9 +1,10 @@
 import { MonthlyIncomeData, MonthlyTaxResult, YearlyTaxResult } from './types';
 import { PERSONAL_DEDUCTION, DEPENDENT_DEDUCTION } from './rules-2025';
-import { calculateProgressiveTax } from './progressive';
+import { calculateInsurance } from '../insurance-engine';
+import { calculateTax as calculateTaxEngine, IncomeSource } from '../tax-engine';
 
 /**
- * Tính thuế cho 1 tháng
+ * Tính thuế cho 1 tháng (sử dụng engine mới)
  */
 export function calculateMonthlyTax(
   monthData: MonthlyIncomeData,
@@ -12,33 +13,37 @@ export function calculateMonthlyTax(
 ): MonthlyTaxResult {
   const { month, grossIncome, insuranceSalary } = monthData;
 
-  // Bảo hiểm = Lương đóng BH × Tỷ lệ
-  const insuranceDeduction = insuranceSalary * (insuranceRate / 100);
+  // Sử dụng insurance-engine để tính bảo hiểm
+  const insuranceResult = calculateInsurance({
+    insuranceSalary,
+    insuranceRate
+  });
 
-  // Giảm trừ cá nhân và người phụ thuộc (theo tháng)
-  const personalDeduction = PERSONAL_DEDUCTION;
-  const dependentDeduction = DEPENDENT_DEDUCTION * dependents;
+  // Chuẩn bị income sources (treat as CONTRACT)
+  const incomeSources: IncomeSource[] = [
+    {
+      type: 'CONTRACT',
+      amount: grossIncome,
+      name: `Tháng ${month}`
+    }
+  ];
 
-  // Thu nhập chịu thuế = Gross - Bảo hiểm - Giảm trừ
-  const taxableIncome = Math.max(
-    0,
-    grossIncome - insuranceDeduction - personalDeduction - dependentDeduction
-  );
-
-  // Tính thuế lũy tiến
-  const { tax } = calculateProgressiveTax(taxableIncome);
-
-  // Thực nhận = Gross - Bảo hiểm - Thuế
-  const netIncome = grossIncome - insuranceDeduction - tax;
+  // Sử dụng tax-engine để tính thuế
+  const taxResult = calculateTaxEngine({
+    incomeSources,
+    insuranceDeduction: insuranceResult.insuranceDeduction,
+    personalDeduction: PERSONAL_DEDUCTION,
+    dependentDeduction: DEPENDENT_DEDUCTION * dependents
+  });
 
   return {
     month,
-    grossIncome,
+    grossIncome: taxResult.totalIncome,
     insuranceSalary,
-    insuranceDeduction,
-    taxableIncome,
-    tax,
-    netIncome,
+    insuranceDeduction: taxResult.insuranceDeduction,
+    taxableIncome: taxResult.taxableIncome,
+    tax: taxResult.totalTax,
+    netIncome: taxResult.netIncome,
   };
 }
 

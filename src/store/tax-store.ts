@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { TaxInput, TaxResult, CalculationMode, MonthlyIncomeData, YearlyTaxResult } from '@/lib/tax/types';
-import { calculateTax } from '@/lib/tax/calculator';
+import { calculateTaxAdapter } from '@/lib/tax-adapter';
 import { calculateYearlyTaxFromMonthly, createDefaultMonthlyData } from '@/lib/tax/calculator-monthly';
 import { DEFAULT_INSURANCE_RATES } from '@/lib/tax/rules-2025';
 
@@ -40,9 +40,9 @@ const INITIAL_GROSS_INCOME = 20_000_000;
 const INITIAL_DEPENDENTS = 0;
 const INITIAL_INSURANCE_RATE = DEFAULT_INSURANCE_RATES.total;
 
-// Helper to calculate tax
+// Helper to calculate tax using new adapter
 const computeTax = (input: TaxInput): TaxResult => {
-  return calculateTax(input);
+  return calculateTaxAdapter(input);
 };
 
 export const useTaxStore = create<TaxStore>((set, get) => ({
