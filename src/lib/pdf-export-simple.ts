@@ -1,10 +1,11 @@
+import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { TaxResult, YearlyTaxResult, MonthlyTaxResult } from './tax/types';
 import { formatCurrency } from './utils';
 
 /**
- * Export tax result as a simple, text-based professional PDF
- * Suitable for printing, sending to accountants, and archival
+ * Export tax result as a professional PDF using HTML template
+ * Perfect Vietnamese rendering with clean, print-ready layout
  */
 export async function exportTaxResultToPDFSimple(
   result: TaxResult | null,
@@ -13,84 +14,7 @@ export async function exportTaxResultToPDFSimple(
   dependents: number,
   insuranceRate: number
 ) {
-  const pdf = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-    compress: true
-  });
-
-  // Use times font for better Vietnamese support
-  pdf.setFont('times', 'normal');
-
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const margin = 25; // Increased margin for better look
-  const contentWidth = pageWidth - 2 * margin;
-  let yPos = margin + 5;
-
-  // Helper function to add text with proper encoding
-  const addText = (text: string, fontSize: number, align: 'left' | 'center' | 'right' = 'left', bold: boolean = false) => {
-    pdf.setFontSize(fontSize);
-    pdf.setFont('times', bold ? 'bold' : 'normal');
-    
-    if (align === 'center') {
-      pdf.text(text, pageWidth / 2, yPos, { align: 'center', maxWidth: contentWidth });
-    } else if (align === 'right') {
-      pdf.text(text, pageWidth - margin, yPos, { align: 'right' });
-    } else {
-      pdf.text(text, margin, yPos, { maxWidth: contentWidth });
-    }
-    
-    yPos += fontSize * 0.5 + 2; // Better line spacing
-  };
-
-  // Helper function to add line
-  const addLine = () => {
-    yPos += 4;
-    pdf.setLineWidth(0.3);
-    pdf.setDrawColor(100, 100, 100); // Gray color
-    pdf.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 6;
-  };
-
-  // Helper function to add row with label and value
-  const addRow = (label: string, value: string, bold: boolean = false, indent: number = 0) => {
-    pdf.setFontSize(11);
-    pdf.setFont('times', bold ? 'bold' : 'normal');
-    pdf.text(label, margin + indent, yPos);
-    pdf.text(value, pageWidth - margin, yPos, { align: 'right' });
-    yPos += 7; // Better row spacing
-  };
-
-  // Helper function to check page break
-  const checkPageBreak = (neededSpace: number = 20) => {
-    if (yPos + neededSpace > pageHeight - margin) {
-      pdf.addPage();
-      yPos = margin;
-      return true;
-    }
-    return false;
-  };
-
-  // ===========================================
-  // 1. HEADER
-  // ===========================================
-  yPos += 5;
-  addText('TỔNG KẾT THUẾ TNCN', 20, 'center', true);
-  yPos += 3;
-  addText('Tính toán tổng thu nhập và thuế thu nhập cá nhân', 11, 'center', false);
-  yPos += 8;
-  addLine();
-
-  // ===========================================
-  // 2. THÔNG TIN CHUNG
-  // ===========================================
-  yPos += 2;
-  addText('THÔNG TIN CHUNG', 13, 'left', true);
-  yPos += 5;
-
-  // Current date
+  // Prepare data
   const currentDate = new Date();
   const dateStr = currentDate.toLocaleDateString('vi-VN', { 
     year: 'numeric', 
@@ -98,185 +22,267 @@ export async function exportTaxResultToPDFSimple(
     day: '2-digit' 
   });
 
-  pdf.setFontSize(11);
-  pdf.setFont('times', 'normal');
-  
-  const labelX = margin + 5;
-  const valueX = margin + 75;
-  
-  // Left column labels
-  pdf.text('Khoảng thời gian:', labelX, yPos);
-  pdf.text('Số người phụ thuộc:', labelX, yPos + 7);
-  pdf.text('Chế độ tính:', labelX, yPos + 14);
-  pdf.text('Tỷ lệ bảo hiểm:', labelX, yPos + 21);
-  
-  // Right column values
-  pdf.text('01/2025 - 12/2025', valueX, yPos);
-  pdf.text(`${dependents} người`, valueX, yPos + 7);
-  pdf.text(calculationMode === 'fixed' ? 'Thu nhập cố định' : 'Thu nhập theo tháng', valueX, yPos + 14);
-  pdf.text(`${insuranceRate}%`, valueX, yPos + 21);
-
-  yPos += 28;
-  addLine();
-
-  // ===========================================
-  // 3. TỔNG KẾT THU NHẬP & KHẤU TRỪ
-  // ===========================================
-  checkPageBreak(60);
-  yPos += 2;
-  addText('TỔNG KẾT THU NHẬP & KHẤU TRỪ', 13, 'left', true);
-  yPos += 5;
-
-  if (calculationMode === 'fixed' && result) {
-    addRow('Tổng thu nhập:', formatCurrency(result.grossIncome * 12));
-    addRow('Lương đóng bảo hiểm:', formatCurrency(result.insuranceSalary * 12));
-    addRow('Tiền bảo hiểm:', formatCurrency(result.insuranceDeduction * 12));
-    addRow('Giảm trừ bản thân:', formatCurrency(result.personalDeduction * 12));
-    if (result.dependentDeduction > 0) {
-      addRow('Giảm trừ người phụ thuộc:', formatCurrency(result.dependentDeduction * 12));
-    }
-  } else if (calculationMode === 'monthly' && yearlyResult) {
-    addRow('Tổng thu nhập:', formatCurrency(yearlyResult.totalGrossIncome));
-    addRow('Lương đóng bảo hiểm:', formatCurrency(yearlyResult.totalGrossIncome));
-    addRow('Tiền bảo hiểm:', formatCurrency(yearlyResult.totalInsuranceDeduction));
-    addRow('Giảm trừ bản thân:', formatCurrency(yearlyResult.personalDeduction));
-    if (yearlyResult.dependentDeduction > 0) {
-      addRow('Giảm trừ người phụ thuộc:', formatCurrency(yearlyResult.dependentDeduction));
-    }
-  }
-
-  yPos += 2;
-  addLine();
-
-  // ===========================================
-  // 4. THU NHẬP CHỊU THUẾ & THUẾ
-  // ===========================================
-  checkPageBreak(30);
-  yPos += 2;
-  addText('THU NHẬP CHỊU THUẾ & THUẾ TNCN', 13, 'left', true);
-  yPos += 5;
-
-  if (calculationMode === 'fixed' && result) {
-    addRow('Thu nhập chịu thuế:', formatCurrency(result.taxableIncome * 12));
-    addRow('Thuế TNCN phải nộp:', formatCurrency(result.totalTax * 12));
-  } else if (calculationMode === 'monthly' && yearlyResult) {
-    // Calculate total taxable income from monthly results
-    const totalTaxableIncome = yearlyResult.monthlyResults.reduce((sum, m) => sum + m.taxableIncome, 0);
-    addRow('Thu nhập chịu thuế:', formatCurrency(totalTaxableIncome));
-    addRow('Thuế TNCN phải nộp:', formatCurrency(yearlyResult.totalTax));
-  }
-
-  yPos += 2;
-  addLine();
-
-  // ===========================================
-  // 5. THỰC NHẬN (EMPHASIZED)
-  // ===========================================
-  checkPageBreak(30);
-  yPos += 5;
-  
   const netIncome = calculationMode === 'fixed' && result 
     ? result.netIncome * 12 
     : yearlyResult?.totalNetIncome || 0;
-  
-  // Add a subtle background box
-  pdf.setFillColor(245, 245, 245);
-  pdf.rect(margin - 5, yPos - 5, contentWidth + 10, 14, 'F');
-  
-  pdf.setFontSize(15);
-  pdf.setFont('times', 'bold');
-  pdf.text('THỰC NHẬN CẢ NĂM:', margin, yPos + 3);
-  pdf.text(formatCurrency(netIncome), pageWidth - margin, yPos + 3, { align: 'right' });
-  yPos += 18;
-  
-  addLine();
 
-  // ===========================================
-  // 6. CHI TIẾT THEO THÁNG (if monthly mode)
-  // ===========================================
-  if (calculationMode === 'monthly' && yearlyResult && yearlyResult.monthlyResults.length > 0) {
-    checkPageBreak(100);
-    
-    yPos += 2;
-    addText('CHI TIẾT THEO THÁNG', 13, 'left', true);
-    yPos += 7;
+  // Create hidden container
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.width = '210mm'; // A4 width
+  container.style.padding = '20mm';
+  container.style.backgroundColor = '#ffffff';
+  container.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  container.style.color = '#000000';
+  container.style.fontSize = '11pt';
+  container.style.lineHeight = '1.6';
 
-    // Table header
-    pdf.setFontSize(10);
-    pdf.setFont('times', 'bold');
-    
-    const colWidths = {
-      month: 20,
-      income: 38,
-      insurance: 38,
-      tax: 38,
-      net: 38
-    };
-    
-    let xPos = margin;
-    pdf.text('Tháng', xPos, yPos);
-    xPos += colWidths.month;
-    pdf.text('Thu nhập', xPos, yPos);
-    xPos += colWidths.income;
-    pdf.text('Bảo hiểm', xPos, yPos);
-    xPos += colWidths.insurance;
-    pdf.text('Thuế TNCN', xPos, yPos);
-    xPos += colWidths.tax;
-    pdf.text('Thực nhận', xPos, yPos);
-    
-    yPos += 5;
-    pdf.setLineWidth(0.3);
-    pdf.setDrawColor(100, 100, 100);
-    pdf.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 5;
+  // Build HTML content
+  let html = `
+    <div style="max-width: 170mm;">
+      <!-- Header -->
+      <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333;">
+        <h1 style="font-size: 22pt; font-weight: bold; margin: 0 0 10px 0; letter-spacing: 2px;">TỔNG KẾT THUẾ TNCN</h1>
+        <p style="font-size: 11pt; color: #555; margin: 0;">Tính toán tổng thu nhập và thuế thu nhập cá nhân</p>
+      </div>
 
-    // Table rows
-    pdf.setFontSize(10);
-    pdf.setFont('times', 'normal');
-    yearlyResult.monthlyResults.forEach((month: MonthlyTaxResult) => {
-      checkPageBreak(9);
-      
-      xPos = margin;
-      pdf.text(`Tháng ${month.month}`, xPos, yPos);
-      xPos += colWidths.month;
-      pdf.text(formatCurrency(month.grossIncome), xPos, yPos);
-      xPos += colWidths.income;
-      pdf.text(formatCurrency(month.insuranceDeduction), xPos, yPos);
-      xPos += colWidths.insurance;
-      pdf.text(formatCurrency(month.tax), xPos, yPos);
-      xPos += colWidths.tax;
-      pdf.text(formatCurrency(month.netIncome), xPos, yPos);
-      
-      yPos += 6;
-    });
-    
-    yPos += 2;
-    addLine();
+      <!-- Thông tin chung -->
+      <div style="margin-bottom: 25px;">
+        <h2 style="font-size: 13pt; font-weight: bold; margin: 0 0 15px 0; text-transform: uppercase;">THÔNG TIN CHUNG</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 6px 0; width: 45%;">Khoảng thời gian:</td>
+            <td style="padding: 6px 0; font-weight: 600;">01/2025 - 12/2025</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0;">Số người phụ thuộc:</td>
+            <td style="padding: 6px 0; font-weight: 600;">${dependents} người</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0;">Chế độ tính:</td>
+            <td style="padding: 6px 0; font-weight: 600;">${calculationMode === 'fixed' ? 'Thu nhập cố định' : 'Thu nhập theo tháng'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0;">Tỷ lệ bảo hiểm:</td>
+            <td style="padding: 6px 0; font-weight: 600;">${insuranceRate}%</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="border-top: 1px solid #ddd; margin: 25px 0;"></div>
+
+      <!-- Tổng kết thu nhập -->
+      <div style="margin-bottom: 25px;">
+        <h2 style="font-size: 13pt; font-weight: bold; margin: 0 0 15px 0; text-transform: uppercase;">TỔNG KẾT THU NHẬP & KHẤU TRỪ</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+  `;
+
+  if (calculationMode === 'fixed' && result) {
+    html += `
+          <tr>
+            <td style="padding: 6px 0;">Tổng thu nhập:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(result.grossIncome * 12)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0;">Lương đóng bảo hiểm:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(result.insuranceSalary * 12)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0;">Tiền bảo hiểm:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(result.insuranceDeduction * 12)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0;">Giảm trừ bản thân:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(result.personalDeduction * 12)}</td>
+          </tr>
+    `;
+    if (result.dependentDeduction > 0) {
+      html += `
+          <tr>
+            <td style="padding: 6px 0;">Giảm trừ người phụ thuộc:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(result.dependentDeduction * 12)}</td>
+          </tr>
+      `;
+    }
+  } else if (calculationMode === 'monthly' && yearlyResult) {
+    html += `
+          <tr>
+            <td style="padding: 6px 0;">Tổng thu nhập:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(yearlyResult.totalGrossIncome)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0;">Lương đóng bảo hiểm:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(yearlyResult.totalGrossIncome)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0;">Tiền bảo hiểm:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(yearlyResult.totalInsuranceDeduction)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0;">Giảm trừ bản thân:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(yearlyResult.personalDeduction)}</td>
+          </tr>
+    `;
+    if (yearlyResult.dependentDeduction > 0) {
+      html += `
+          <tr>
+            <td style="padding: 6px 0;">Giảm trừ người phụ thuộc:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(yearlyResult.dependentDeduction)}</td>
+          </tr>
+      `;
+    }
   }
 
-  // ===========================================
-  // 7. FOOTER
-  // ===========================================
-  // Go to bottom of page
-  yPos = pageHeight - margin - 18;
-  
-  pdf.setFontSize(9);
-  pdf.setFont('times', 'normal');
-  pdf.setTextColor(100, 100, 100);
-  pdf.text(`Ngày xuất PDF: ${dateStr}`, margin, yPos);
-  
-  yPos += 7;
-  pdf.setFontSize(9);
-  pdf.setFont('times', 'normal');
-  
-  const disclaimer = 'Tài liệu được hệ thống tự động tính toán, chỉ mang tính chất tham khảo.';
-  pdf.text(disclaimer, pageWidth / 2, yPos, { align: 'center', maxWidth: contentWidth });
-  
-  yPos += 5;
-  const disclaimer2 = 'Vui lòng đối chiếu với kế toán hoặc cơ quan thuế.';
-  pdf.text(disclaimer2, pageWidth / 2, yPos, { align: 'center', maxWidth: contentWidth });
+  html += `
+        </table>
+      </div>
 
-  // Save PDF
+      <div style="border-top: 1px solid #ddd; margin: 25px 0;"></div>
+
+      <!-- Thu nhập chịu thuế & Thuế -->
+      <div style="margin-bottom: 25px;">
+        <h2 style="font-size: 13pt; font-weight: bold; margin: 0 0 15px 0; text-transform: uppercase;">THU NHẬP CHỊU THUẾ & THUẾ TNCN</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+  `;
+
+  if (calculationMode === 'fixed' && result) {
+    html += `
+          <tr>
+            <td style="padding: 6px 0;">Thu nhập chịu thuế:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(result.taxableIncome * 12)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0;">Thuế TNCN phải nộp:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(result.totalTax * 12)}</td>
+          </tr>
+    `;
+  } else if (calculationMode === 'monthly' && yearlyResult) {
+    const totalTaxableIncome = yearlyResult.monthlyResults.reduce((sum, m) => sum + m.taxableIncome, 0);
+    html += `
+          <tr>
+            <td style="padding: 6px 0;">Thu nhập chịu thuế:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(totalTaxableIncome)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0;">Thuế TNCN phải nộp:</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(yearlyResult.totalTax)}</td>
+          </tr>
+    `;
+  }
+
+  html += `
+        </table>
+      </div>
+
+      <div style="border-top: 1px solid #ddd; margin: 25px 0;"></div>
+
+      <!-- Thực nhận - Highlighted -->
+      <div style="background: #f5f5f5; padding: 20px; margin: 25px 0; border-radius: 4px; border: 1px solid #ddd;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="font-size: 16pt; font-weight: bold;">THỰC NHẬN CẢ NĂM:</td>
+            <td style="font-size: 16pt; font-weight: bold; text-align: right;">${formatCurrency(netIncome)}</td>
+          </tr>
+        </table>
+      </div>
+  `;
+
+  // Monthly details table if applicable
+  if (calculationMode === 'monthly' && yearlyResult && yearlyResult.monthlyResults.length > 0) {
+    html += `
+      <div style="border-top: 1px solid #ddd; margin: 25px 0;"></div>
+      
+      <div style="margin-bottom: 25px;">
+        <h2 style="font-size: 13pt; font-weight: bold; margin: 0 0 15px 0; text-transform: uppercase;">CHI TIẾT THEO THÁNG</h2>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
+          <thead>
+            <tr style="background: #f5f5f5;">
+              <th style="padding: 8px; border: 1px solid #ddd; text-align: left; font-weight: 600;">Tháng</th>
+              <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: 600;">Thu nhập</th>
+              <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: 600;">Bảo hiểm</th>
+              <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: 600;">Thuế TNCN</th>
+              <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: 600;">Thực nhận</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    yearlyResult.monthlyResults.forEach((month: MonthlyTaxResult) => {
+      html += `
+            <tr>
+              <td style="padding: 8px; border: 1px solid #ddd;">Tháng ${month.month}</td>
+              <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${formatCurrency(month.grossIncome)}</td>
+              <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${formatCurrency(month.insuranceDeduction)}</td>
+              <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${formatCurrency(month.tax)}</td>
+              <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${formatCurrency(month.netIncome)}</td>
+            </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // Footer
+  html += `
+      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 9pt; color: #666;">
+        <p style="margin: 0 0 8px 0;">Ngày xuất PDF: ${dateStr}</p>
+        <p style="margin: 0; font-style: italic; line-height: 1.5;">
+          Tài liệu được hệ thống tự động tính toán, chỉ mang tính chất tham khảo.<br>
+          Vui lòng đối chiếu với kế toán hoặc cơ quan thuế.
+        </p>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+  document.body.appendChild(container);
+
+  // Wait for fonts to load
+  await document.fonts.ready;
+
+  // Capture with html2canvas
+  const canvas = await html2canvas(container, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    backgroundColor: '#ffffff',
+    windowWidth: container.scrollWidth,
+    windowHeight: container.scrollHeight,
+  });
+
+  // Remove container
+  document.body.removeChild(container);
+
+  // Create PDF
+  const imgData = canvas.toDataURL('image/png');
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pdfWidth;
+  const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+  // If content is taller than one page, scale to fit
+  if (imgHeight > pdfHeight) {
+    const scaleFactor = pdfHeight / imgHeight;
+    const scaledWidth = imgWidth * scaleFactor;
+    const scaledHeight = pdfHeight;
+    const xOffset = (pdfWidth - scaledWidth) / 2;
+    pdf.addImage(imgData, 'PNG', xOffset, 0, scaledWidth, scaledHeight);
+  } else {
+    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+  }
+
+  // Save
   const fileName = `Tong-ket-thue-TNCN-${dateStr.replace(/\//g, '-')}.pdf`;
   pdf.save(fileName);
 }
