@@ -52,30 +52,30 @@ export function DeductionForm() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.1 }}
+      transition={{ duration: 0.3, delay: 0.1 }}
     >
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+      <Card className="border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Shield className="h-4 w-4 text-primary opacity-70" />
             Giảm Trừ & Bảo Hiểm
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs">
             Điều chỉnh tỷ lệ bảo hiểm bắt buộc
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           {/* Insurance Rate Slider */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="insuranceRate">Tỷ Lệ Bảo Hiểm</Label>
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="insuranceRate" className="text-xs">Tỷ Lệ Bảo Hiểm</Label>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      <Info className="h-3 w-3 text-muted-foreground cursor-help opacity-50" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="max-w-xs">BHXH (8%) + BHYT (1,5%) + BHTN (1%) = 10,5%</p>
@@ -132,12 +132,12 @@ export function DeductionForm() {
                           <Info className="h-3 w-3 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="max-w-xs">Giảm trữ bản thân: 11 triệu đồng/tháng</p>
+                          <p className="max-w-xs">Giảm trữ bản thân: 15,5 triệu đồng/tháng</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-                  <p className="text-xs text-muted-foreground">11.000.000 đ/tháng</p>
+                  <p className="text-xs text-muted-foreground">15.500.000 đ/tháng</p>
                 </div>
               </div>
               
@@ -151,12 +151,12 @@ export function DeductionForm() {
                           <Info className="h-3 w-3 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="max-w-xs">Mỗi người phụ thuộc: 4,4 triệu đồng/tháng</p>
+                          <p className="max-w-xs">Mỗi người phụ thuộc: 6,2 triệu đồng/tháng</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-                  <p className="text-xs text-muted-foreground">4.400.000 đ/người/tháng</p>
+                  <p className="text-xs text-muted-foreground">6.200.000 đ/người/tháng</p>
                 </div>
               </div>
             </div>

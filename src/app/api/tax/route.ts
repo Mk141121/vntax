@@ -6,6 +6,7 @@ import { TaxInput } from '@/lib/tax/types';
 // Zod schema for validation
 const TaxInputSchema = z.object({
   grossIncome: z.number().min(0, 'Gross income must be non-negative'),
+  insuranceSalary: z.number().min(0, 'Insurance salary must be non-negative'),
   dependents: z.number().int().min(0, 'Dependents must be a non-negative integer'),
   insuranceRate: z.number().min(0).max(100, 'Insurance rate must be between 0 and 100'),
 });
@@ -68,8 +69,10 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     
+    const grossIncome = Number(searchParams.get('grossIncome') || '0');
     const input: TaxInput = {
-      grossIncome: Number(searchParams.get('grossIncome') || '0'),
+      grossIncome,
+      insuranceSalary: Number(searchParams.get('insuranceSalary') || grossIncome.toString()),
       dependents: Number(searchParams.get('dependents') || '0'),
       insuranceRate: Number(searchParams.get('insuranceRate') || '10.5'),
     };

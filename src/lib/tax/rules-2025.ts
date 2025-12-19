@@ -17,8 +17,8 @@ export const TAX_BRACKETS: TaxBracket[] = [
 ];
 
 // Deductions (monthly amounts in VND)
-export const PERSONAL_DEDUCTION = 11_000_000; // VND per month
-export const DEPENDENT_DEDUCTION = 4_400_000; // VND per person per month
+export const PERSONAL_DEDUCTION = 15_500_000; // VND per month
+export const DEPENDENT_DEDUCTION = 6_200_000; // VND per person per month
 
 // Default insurance rates (employee side)
 export const DEFAULT_INSURANCE_RATES = {
@@ -44,8 +44,8 @@ export const TAX_LABELS = {
 };
 
 export const TAX_DESCRIPTIONS = {
-  personalDeduction: 'Standard personal deduction: 11,000,000 VND/month',
-  dependentDeduction: 'Each dependent: 4,400,000 VND/month',
+  personalDeduction: 'Standard personal deduction: 15,500,000 VND/month',
+  dependentDeduction: 'Each dependent: 6,200,000 VND/month',
   insuranceDeduction: 'Social (8%) + Health (1.5%) + Unemployment (1%) = 10.5%',
   grossIncome: 'Your total monthly income before any deductions',
   dependents: 'Number of dependents (spouse, children, parents)',

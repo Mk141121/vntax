@@ -16,10 +16,10 @@ import { calculateProgressiveTax } from './progressive';
  * 7. = Net income
  */
 export function calculateTax(input: TaxInput): TaxResult {
-  const { grossIncome, dependents, insuranceRate } = input;
+  const { grossIncome, insuranceSalary, dependents, insuranceRate } = input;
 
-  // Step 1: Calculate insurance deduction
-  const insuranceDeduction = grossIncome * (insuranceRate / 100);
+  // Step 1: Calculate insurance deduction (PHẢI dùng insuranceSalary, KHÔNG dùng grossIncome)
+  const insuranceDeduction = insuranceSalary * (insuranceRate / 100);
 
   // Step 2: Calculate personal and dependent deductions
   const personalDeduction = PERSONAL_DEDUCTION;
@@ -42,6 +42,7 @@ export function calculateTax(input: TaxInput): TaxResult {
 
   return {
     grossIncome,
+    insuranceSalary,
     insuranceDeduction,
     personalDeduction,
     dependentDeduction,

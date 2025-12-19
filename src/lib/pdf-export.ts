@@ -40,6 +40,7 @@ export function exportTaxResultToPDF(taxResult: TaxResult, grossIncome: number, 
   
   const inputData = [
     ['Thu Nhap Gop (Gross Income):', formatCurrency(grossIncome)],
+    ['Muc Luong Dong BH (Insurance Salary):', formatCurrency(taxResult.insuranceSalary)],
     ['So Nguoi Phu Thuoc (Dependents):', dependents.toString()],
     ['Ty Le Bao Hiem (Insurance Rate):', formatPercentage(insuranceRate, 1)],
   ];
@@ -88,8 +89,20 @@ export function exportTaxResultToPDF(taxResult: TaxResult, grossIncome: number, 
   
   yPos += 5;
   
+  // Thêm thông tin phân bổ thu nhập
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  
+  const netPercent = ((taxResult.netIncome / taxResult.grossIncome) * 100).toFixed(1);
+  const taxPercent = ((taxResult.totalTax / taxResult.grossIncome) * 100).toFixed(1);
+  const insPercent = ((taxResult.insuranceDeduction / taxResult.grossIncome) * 100).toFixed(1);
+  
+  doc.text(`Thuc nhan: ${netPercent}% | Thue: ${taxPercent}% | Bao hiem: ${insPercent}%`, 25, yPos + 18);
+  
   const breakdownData = [
     ['Thu Nhap Gop', formatCurrency(taxResult.grossIncome)],
+    ['Muc Luong Dong BH', formatCurrency(taxResult.insuranceSalary)],
     ['Bao Hiem (-)', formatCurrency(taxResult.insuranceDeduction), true],
     ['Giam Tru Ban Than (-)', formatCurrency(taxResult.personalDeduction), true],
     ['Giam Tru Nguoi Phu Thuoc (-)', formatCurrency(taxResult.dependentDeduction), true],
